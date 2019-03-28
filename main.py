@@ -5,9 +5,6 @@ import platform
 import psutil
 
 def checkIfProcessRunning(processName):
-    '''
-    Check if there is any running process that contains the given name processName.
-    '''
     for proc in psutil.process_iter():
         try:
             if processName.lower() in proc.name().lower():
